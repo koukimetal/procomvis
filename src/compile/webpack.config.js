@@ -1,7 +1,13 @@
 const path = require('path');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const nodeExternals = require('webpack-node-externals');
 const webpack = require('webpack');
+
+function getBanner(codePath) {
+    const lines = [];
+    lines.push(`path: ${codePath}`);
+    lines.push(`URL: https://github.com/koukimetal/procomvis/tree/master/src/contest/${codePath}`);
+    return lines.join('\n');
+}
 
 module.exports = (env) => {
     if (!env.COMPILE) {
@@ -12,9 +18,8 @@ module.exports = (env) => {
         target: 'node',
         output: {
             path: path.resolve(__dirname, '../../dist'),
-            filename: '[name].js'
+            filename: 'submit.js'
         },
-        externals: [nodeExternals()],
         entry: path.resolve(__dirname, './template.ts'),
         module: {
             rules: [
@@ -34,9 +39,11 @@ module.exports = (env) => {
         },
         plugins: [
             new webpack.BannerPlugin({
-                banner: `path:${env.COMPILE}`,
+                banner: getBanner(env.COMPILE),
             }),
         ],
-        devtool: 'source-map'
+        node: {
+            fs: 'empty',
+        },
     });
 };
