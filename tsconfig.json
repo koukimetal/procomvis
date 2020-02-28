@@ -9,6 +9,7 @@
     "allowJs": true,
     "baseUrl": "src",
     "skipLibCheck": true,
+    "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,

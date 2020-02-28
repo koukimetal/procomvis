@@ -1,9 +1,7 @@
-
 import {SolverBase} from "shared/solve";
 import { getSpaceIterator } from "contest/utils/generators";
 import BigNumber from "bignumber.js";
-// WA. This approach can't handle something like 2 2 -2 -2 3 -3 3 -3
-
+// TLE
 export type Input = {
     N: number,
     K: number,
@@ -15,89 +13,93 @@ export type Output = {
 }
 
 export class Solver extends SolverBase<Input, Output> {
-
-    mul(a: number, b: number) {
-        const ba = new BigNumber(a);
-        const bb = new BigNumber(b);
-        return ba.multipliedBy(bb);
-    }
-
-    calcSums(A: number[]) {
-        const N = A.length;
-        const count = new Array<{pos: number, neg: number, zer: number}>(N);
-        count[N - 1] = {pos: 0, neg: 0, zer: 0};
-        for (let i = N - 2; i >= 0; i--) {
-            const after = count[i + 1];
-            count[i] = {...after};
-            if (A[i + 1] > 0) {
-                count[i].pos++;
-            } else if (A[i + 1] < 0) {
-                count[i].neg++;
-            } else {
-                count[i].zer++;
-            }
-        }
-        const sums = new Array<{pos: number, neg: number, zer: number}>(N);
-        for (let i = 0; i < N; i++) {
-            sums[i] = {pos: 0, neg: 0, zer: 0};
-            if (A[i] === 0) {
-                sums[i].zer = N - i - 1;
-            } else if (A[i] > 0) {
-                sums[i].pos = count[i].pos;
-                sums[i].neg = count[i].neg;
-            } else {
-                sums[i].pos = count[i].neg;
-                sums[i].neg = count[i].pos;
-            }
-        }
-        return sums;
-    }
-
     solve({N, K, A}: Input): Output {
-        A.sort((a, b) => Math.abs(a) - Math.abs(b));
-        let sums = this.calcSums(A);
+        BigNumber.config({ROUNDING_MODE: BigNumber.ROUND_DOWN});
+        A.sort((a, b) => a - b);
+        const BA = new Array<BigNumber>(N);
+        for (let i = 0; i < N; i++) {
+            BA[i] = new BigNumber(A[i]);
+        }
 
-        const numNeg = sums.reduce((a, {neg}) => a + neg, 0);
-        const numZer = sums.reduce((a, {zer}) => a + zer, 0);
-        if (K <= numNeg) {
-
-            let target = K;
-            for (let i = N - 1; i >= 0; i--) {
-                if (target <= sums[i].neg) {
-                    const ai = A[i] < 0 ? -1 : 1;
-                    for (let j = N - 1; j > i; j--) {
-                        if (ai * A[j] < 0) {
-                            target--;
-                        }
-                        if (target === 0) {
-                            return {answer: this.mul(A[j], A[i])};
-                        }
-                    }
-                } else {
-                    target -= sums[i].neg;
-                }
-            }
-        } else if (K <= numNeg + numZer) {
-            return {answer: this.mul(0, 1)};
-        } else {
-            let target = K - numNeg - numZer;
-            for (let i = 0; i < N; i++) {
-                if (target <= sums[i].pos) {
-                    const ai = A[i] < 0 ? -1 : 1;
-                    for (let j = i + 1; j < N; j++) {
-                        if (ai * A[j] > 0) {
-                            target--;
-                        }
-                        if (target === 0) {
-                            return {answer: this.mul(A[j], A[i])};
-                        }
-                    }
-                } else {
-                    target -= sums[i].pos;
-                }
+        let neg = 0, pos = 0, zer = 0;
+        for (let i = 0; i < N; i++) {
+            if (A[i] < 0) {
+                neg++;
+            } else if (A[i] > 0) {
+                pos++;
+            } else {
+                zer++;
             }
         }
-        return {answer: this.mul(111, 1)};
+
+        const NC = neg * pos;
+        const ZC = zer * (pos + neg) + (zer * (zer - 1)) / 2;
+
+        const ONE = new BigNumber(1);
+        const ZERO = new BigNumber(0);
+        // the highest number having less than K numbers
+        let low = new BigNumber("-1000000000000000005");
+        let high = new BigNumber("1000000000000000005");
+
+        while (high.minus(low).isGreaterThan(ONE)) {
+            const mid = high.plus(low).dividedToIntegerBy(2);
+            let count = 0; // how many numbers are less than mid.
+            if (mid.isLessThan(ZERO)) {
+                for (let i = 0; i < N; i++) {
+                    if (A[i] >= 0) {
+                        break;
+                    }
+                    let lowIndex = neg + zer - 1;
+                    let highIndex = N;
+                    while (highIndex - lowIndex > 1) {
+                        const midIndex = (lowIndex + highIndex) / 2 | 0;
+                        if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                            highIndex = midIndex;
+                        } else {
+                            lowIndex = midIndex;
+                        }
+                    }
+                    count += (N - highIndex);
+                }
+            } else if (mid.comparedTo(ZERO) > 0) {
+                count += NC + ZC;
+                for (let i = 0; i < N; i++) {
+                    if (A[i] < 0) {
+                        let lowIndex = i;
+                        let highIndex = neg;
+                        while (highIndex - lowIndex > 1) {
+                            let midIndex = (lowIndex + highIndex) / 2 | 0;
+                            if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                                highIndex = midIndex;
+                            } else {
+                                lowIndex = midIndex;
+                            }
+                        }
+                        count += neg - highIndex;
+                    } else if (A[i] > 0) {
+                        let lowIndex = i;
+                        let highIndex = N;
+                        while (highIndex - lowIndex > 1) {
+                            let midIndex = (lowIndex + highIndex) / 2 | 0;
+                            if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                                lowIndex = midIndex;
+                            } else {
+                                highIndex = midIndex;
+                            }
+                        }
+                        count += lowIndex - i; 
+                    }
+                }
+            } else {
+                count = NC;
+            }
+            if (count < K) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return {answer: low};
     }
     parse(text: string) {
         const it = getSpaceIterator(text, val => parseInt(val));
