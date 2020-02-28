@@ -1,6 +1,6 @@
 import {SolverBase} from "shared/solve";
 import { getSpaceIterator } from "contest/utils/generators";
-import BigNumber from "bignumber.js";
+import Big from 'big.js';
 // TLE
 export type Input = {
     N: number,
@@ -9,16 +9,15 @@ export type Input = {
 }
 
 export type Output = {
-    answer: BigNumber,
+    answer: Big,
 }
 
 export class Solver extends SolverBase<Input, Output> {
     solve({N, K, A}: Input): Output {
-        BigNumber.config({ROUNDING_MODE: BigNumber.ROUND_DOWN});
         A.sort((a, b) => a - b);
-        const BA = new Array<BigNumber>(N);
+        const BA = new Array<Big>(N);
         for (let i = 0; i < N; i++) {
-            BA[i] = new BigNumber(A[i]);
+            BA[i] = new Big(A[i]);
         }
 
         let neg = 0, pos = 0, zer = 0;
@@ -35,16 +34,16 @@ export class Solver extends SolverBase<Input, Output> {
         const NC = neg * pos;
         const ZC = zer * (pos + neg) + (zer * (zer - 1)) / 2;
 
-        const ONE = new BigNumber(1);
-        const ZERO = new BigNumber(0);
+        const ONE = new Big(1);
+        const ZERO = new Big(0);
         // the highest number having less than K numbers
-        let low = new BigNumber("-1000000000000000005");
-        let high = new BigNumber("1000000000000000005");
+        let low = new Big("-1000000000000000005");
+        let high = new Big("1000000000000000005");
 
-        while (high.minus(low).isGreaterThan(ONE)) {
-            const mid = high.plus(low).dividedToIntegerBy(2);
+        while (high.minus(low).gt(ONE)) {
+            const mid = high.plus(low).div(2).round();
             let count = 0; // how many numbers are less than mid.
-            if (mid.isLessThan(ZERO)) {
+            if (mid.lt(ZERO)) {
                 for (let i = 0; i < N; i++) {
                     if (A[i] >= 0) {
                         break;
@@ -53,7 +52,7 @@ export class Solver extends SolverBase<Input, Output> {
                     let highIndex = N;
                     while (highIndex - lowIndex > 1) {
                         const midIndex = (lowIndex + highIndex) / 2 | 0;
-                        if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                        if (BA[i].mul(BA[midIndex]).lt(mid)) {
                             highIndex = midIndex;
                         } else {
                             lowIndex = midIndex;
@@ -61,7 +60,7 @@ export class Solver extends SolverBase<Input, Output> {
                     }
                     count += (N - highIndex);
                 }
-            } else if (mid.comparedTo(ZERO) > 0) {
+            } else if (mid.gt(ZERO)) {
                 count += NC + ZC;
                 for (let i = 0; i < N; i++) {
                     if (A[i] < 0) {
@@ -69,7 +68,7 @@ export class Solver extends SolverBase<Input, Output> {
                         let highIndex = neg;
                         while (highIndex - lowIndex > 1) {
                             let midIndex = (lowIndex + highIndex) / 2 | 0;
-                            if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                            if (BA[i].mul(BA[midIndex]).lt(mid)) {
                                 highIndex = midIndex;
                             } else {
                                 lowIndex = midIndex;
@@ -81,7 +80,7 @@ export class Solver extends SolverBase<Input, Output> {
                         let highIndex = N;
                         while (highIndex - lowIndex > 1) {
                             let midIndex = (lowIndex + highIndex) / 2 | 0;
-                            if (BA[i].multipliedBy(BA[midIndex]).isLessThan(mid)) {
+                            if (BA[i].mul(BA[midIndex]).lt(mid)) {
                                 lowIndex = midIndex;
                             } else {
                                 highIndex = midIndex;
