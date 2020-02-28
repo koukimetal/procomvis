@@ -28,7 +28,9 @@ module.exports = (env) => {
         },
         resolve: {
             alias: {
-                './dummy': path.resolve(__dirname, '../contest/', `${env.COMPILE}/solve`)
+                './dummy': path.resolve(__dirname, '../contest/', `${env.COMPILE}/solve`),
+                // big-integer repo may have some problem and we have to specify the file.
+                'big-integer': path.resolve(__dirname, '../../node_modules/big-integer/BigInteger.js'),
             },
             plugins: [
                 new TsconfigPathsPlugin({
