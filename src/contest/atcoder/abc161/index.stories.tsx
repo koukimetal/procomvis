@@ -7,7 +7,7 @@ export default { title: 'atcoder.abc161' };
 export const D = () => (
     <ProblemTemplate
         description="https://atcoder.jp/contests/abc161/tasks/abc161_d"
-        submit="https://atcoder.jp/contests/abc155/submissions/10393304"
+        submit="https://atcoder.jp/contests/abc161/submissions/11581845"
     >
         <DebugForm solver={new DSolver()} />
     </ProblemTemplate>
